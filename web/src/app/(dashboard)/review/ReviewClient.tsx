@@ -9,6 +9,7 @@ import { toast } from "sonner"
 export default function ReviewClient({ initialDrafts }: { initialDrafts: any[] }) {
   const [drafts, setDrafts] = useState(initialDrafts)
   const [activeDraft, setActiveDraft] = useState<any | null>(null)
+  const [zoom, setZoom] = useState(1);
   
   if (drafts.length === 0) {
     return <div className="p-8 text-center text-muted-foreground">No pending invoices in the review queue!</div>
@@ -34,8 +35,6 @@ export default function ReviewClient({ initialDrafts }: { initialDrafts: any[] }
       </div>
     )
   }
-
-  const [zoom, setZoom] = useState(1);
 
   // Active Draft View
   const handleApprove = async () => {

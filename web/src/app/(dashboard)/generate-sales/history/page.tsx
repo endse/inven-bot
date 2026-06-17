@@ -13,97 +13,102 @@ export default async function GenerateHistoryPage() {
   });
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in duration-300">
-      <div className="flex items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-        <div className="flex items-center gap-4">
+    <div className="flex flex-col gap-8 max-w-6xl mx-auto py-4 animate-in fade-in duration-500">
+      <div className="flex items-center justify-between bg-white/80 backdrop-blur-2xl p-6 rounded-3xl shadow-sm border border-zinc-200/60">
+        <div className="flex items-center gap-5">
           <Link href="/generate-sales">
-            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-slate-100">
-              <ArrowLeft className="h-5 w-5 text-slate-500" />
+            <Button variant="ghost" size="icon" className="h-12 w-12 rounded-full hover:bg-zinc-100 transition-colors">
+              <ArrowLeft className="h-5 w-5 text-zinc-500" />
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Generation Queue History</h1>
-            <p className="text-sm text-slate-500 mt-1">Track the status of your automated bill generation requests</p>
+            <h1 className="text-3xl font-semibold text-zinc-900 tracking-tight">Queue History</h1>
+            <p className="text-zinc-500 mt-1 font-medium">Track the status of your automated bill generation requests</p>
           </div>
         </div>
         <ClearQueueButton />
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white/80 backdrop-blur-2xl border border-zinc-200/60 rounded-3xl shadow-sm overflow-hidden">
         {queueItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-            <Clock className="h-12 w-12 opacity-20 mb-4" />
-            <p>No generation requests found.</p>
+          <div className="flex flex-col items-center justify-center py-24 text-zinc-400 bg-zinc-50/50">
+            <Clock className="h-12 w-12 text-zinc-300 mb-4" />
+            <p className="font-medium">No generation requests found.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="bg-slate-50 text-slate-500 font-semibold border-b">
+              <thead className="bg-zinc-50/50 text-zinc-500 font-medium border-b border-zinc-200/60">
                 <tr>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4">Amount Range</th>
-                  <th className="px-6 py-4">Attempts</th>
-                  <th className="px-6 py-4">Next Retry / Time</th>
-                  <th className="px-6 py-4">Error / Info</th>
+                  <th className="px-8 py-5">Status</th>
+                  <th className="px-8 py-5">Amount Range</th>
+                  <th className="px-8 py-5">Attempts</th>
+                  <th className="px-8 py-5">Next Retry / Time</th>
+                  <th className="px-8 py-5">Error / Info</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody className="divide-y divide-zinc-100">
                 {queueItems.map((item) => {
                   let StatusIcon = Clock;
-                  let statusColor = "text-slate-500";
-                  let bgStatus = "bg-slate-100";
+                  let statusColor = "text-zinc-600";
+                  let bgStatus = "bg-zinc-100/80";
+                  let iconColor = "text-zinc-500";
                   
                   if (item.status === "completed") {
                     StatusIcon = CheckCircle;
-                    statusColor = "text-emerald-600";
-                    bgStatus = "bg-emerald-100";
+                    statusColor = "text-emerald-700";
+                    bgStatus = "bg-emerald-50";
+                    iconColor = "text-emerald-500";
                   } else if (item.status === "failed") {
                     StatusIcon = XCircle;
-                    statusColor = "text-red-600";
-                    bgStatus = "bg-red-100";
+                    statusColor = "text-red-700";
+                    bgStatus = "bg-red-50";
+                    iconColor = "text-red-500";
                   } else if (item.status === "processing") {
                     StatusIcon = Loader2;
-                    statusColor = "text-blue-600";
-                    bgStatus = "bg-blue-100";
+                    statusColor = "text-blue-700";
+                    bgStatus = "bg-blue-50";
+                    iconColor = "text-blue-500";
                   } else if (item.status === "pending") {
                     StatusIcon = RefreshCw;
-                    statusColor = "text-amber-600";
-                    bgStatus = "bg-amber-100";
+                    statusColor = "text-amber-700";
+                    bgStatus = "bg-amber-50";
+                    iconColor = "text-amber-500";
                   }
 
                   const isDelayed = item.status === "pending" && new Date(item.nextRetryAt).getTime() > new Date().getTime();
 
                   return (
-                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${statusColor} ${bgStatus}`}>
-                          <StatusIcon className={`h-3.5 w-3.5 ${item.status === 'processing' ? 'animate-spin' : ''}`} />
+                    <tr key={item.id} className="hover:bg-zinc-50/30 transition-colors">
+                      <td className="px-8 py-5">
+                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide ${statusColor} ${bgStatus}`}>
+                          <StatusIcon className={`h-3.5 w-3.5 ${iconColor} ${item.status === 'processing' ? 'animate-spin' : ''}`} />
                           <span className="capitalize">{item.status}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 font-medium text-slate-700">
+                      <td className="px-8 py-5 font-medium text-zinc-800">
                         ${item.minAmount} - ${item.maxAmount}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-8 py-5 text-zinc-500">
                         {item.attempts}
                       </td>
-                      <td className="px-6 py-4 text-slate-600">
+                      <td className="px-8 py-5 text-zinc-600">
                         {isDelayed ? (
                           <span className="text-amber-600 font-medium">
-                            Will retry around {new Date(item.nextRetryAt).toLocaleTimeString()}
+                            Retrying ~{new Date(item.nextRetryAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                           </span>
                         ) : (
-                          new Date(item.createdAt).toLocaleString()
+                          <span className="text-zinc-500">{new Date(item.createdAt).toLocaleString([], {month:'short', day:'numeric', hour: '2-digit', minute:'2-digit'})}</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 max-w-xs truncate text-slate-500">
+                      <td className="px-8 py-5 max-w-xs truncate text-zinc-500">
                         {item.errorMessage ? (
-                          <div className="flex items-center gap-1.5 text-red-500" title={item.errorMessage}>
-                            <AlertCircle className="h-4 w-4 shrink-0" />
+                          <div className="flex items-center gap-2 text-red-600 font-medium" title={item.errorMessage}>
+                            <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
                             <span className="truncate">{item.errorMessage}</span>
                           </div>
                         ) : (
-                          <span className="text-slate-400">-</span>
+                          <span className="text-zinc-300">-</span>
                         )}
                       </td>
                     </tr>

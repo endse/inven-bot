@@ -11,11 +11,11 @@ export default async function GenerateSalesPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-6xl mx-auto py-4">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Auto Sales Generator</h1>
-          <p className="text-slate-500 mt-1">Leverage AI to create realistic, bundled sales invoices to populate your inventory transactions.</p>
+          <h1 className="text-4xl font-semibold tracking-tight text-zinc-900">Auto Sales Generator</h1>
+          <p className="text-zinc-500 mt-2 text-lg font-medium">Leverage AI to create realistic, bundled sales invoices to populate your inventory.</p>
         </div>
       </div>
       

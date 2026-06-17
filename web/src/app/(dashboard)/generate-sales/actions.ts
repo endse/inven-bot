@@ -82,7 +82,7 @@ export async function processQueueAction() {
           invoice_date: new Date().toISOString(),
           items: generated.items,
           totalAmount: generated.totalAmount
-        }
+        } as any
       }
     });
 

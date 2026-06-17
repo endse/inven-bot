@@ -23,10 +23,10 @@ export function ClearQueueButton() {
 
   return (
     <Button 
-      variant="outline" 
+      variant="ghost" 
       onClick={handleClear}
       disabled={isClearing}
-      className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+      className="text-red-500 hover:text-red-600 hover:bg-red-50/50 font-medium rounded-full px-5 transition-colors"
     >
       <Trash2 className="h-4 w-4 mr-2" />
       {isClearing ? "Clearing..." : "Clear Queue"}

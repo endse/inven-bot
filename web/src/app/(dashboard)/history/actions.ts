@@ -8,3 +8,18 @@ export async function deleteInvoiceDraft(id: string) {
     where: { id }
   })
 }
+
+export async function updateInvoiceDraft(transactions: { id: string, quantity: number, rate: number }[]) {
+  await prisma.$transaction(async (tx: any) => {
+    for (const item of transactions) {
+      await tx.transaction.update({
+        where: { id: item.id },
+        data: {
+          quantity: item.quantity,
+          rate: item.rate,
+          amount: item.quantity * item.rate
+        }
+      })
+    }
+  })
+}

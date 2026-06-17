@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { approveDraft, rejectDraft } from "../upload/actions"
+import { toast } from "sonner"
 
 export default function ReviewClient({ initialDrafts }: { initialDrafts: any[] }) {
   const [drafts, setDrafts] = useState(initialDrafts)
@@ -17,7 +18,7 @@ export default function ReviewClient({ initialDrafts }: { initialDrafts: any[] }
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {drafts.map((draft) => (
-          <Card key={draft.id} className="cursor-pointer hover:border-blue-500 transition-colors" onClick={() => setActiveDraft(draft)}>
+          <Card key={draft.id} className="cursor-pointer hover:border-blue-500 transition-colors shadow-sm hover:shadow-md" onClick={() => setActiveDraft(draft)}>
             <CardHeader>
               <CardTitle>Draft ID: {draft.id.slice(0,8)}</CardTitle>
             </CardHeader>
@@ -43,8 +44,9 @@ export default function ReviewClient({ initialDrafts }: { initialDrafts: any[] }
       setDrafts(drafts.filter(d => d.id !== activeDraft.id));
       setActiveDraft(null);
       setZoom(1);
+      toast.success("Invoice approved and transactions recorded!")
     } catch (e) {
-      alert("Error approving draft");
+      toast.error("Error approving draft. Please try again.")
     }
   }
 
@@ -54,14 +56,15 @@ export default function ReviewClient({ initialDrafts }: { initialDrafts: any[] }
       setDrafts(drafts.filter(d => d.id !== activeDraft.id));
       setActiveDraft(null);
       setZoom(1);
+      toast.success("Invoice rejected and removed from queue.")
     } catch (e) {
-      alert("Error rejecting draft");
+      toast.error("Error rejecting draft.")
     }
   }
 
   return (
-    <div className="flex h-full gap-6 items-start">
-      <div className="w-1/2 h-[calc(100vh-8rem)] sticky top-6 border rounded-lg bg-slate-100 flex flex-col overflow-hidden relative">
+    <div className="flex gap-6 items-start relative pb-12">
+      <div className="w-1/2 h-[calc(100vh-8rem)] sticky top-6 border rounded-lg bg-slate-100 flex flex-col overflow-hidden">
         <div className="absolute top-4 right-4 z-10 flex gap-2 bg-white/80 backdrop-blur-sm p-1 rounded-md shadow-sm border">
           <Button variant="ghost" size="sm" onClick={() => setZoom(z => Math.max(0.5, z - 0.25))}>-</Button>
           <div className="px-2 py-1 text-sm font-medium">{Math.round(zoom * 100)}%</div>
@@ -114,7 +117,9 @@ export default function ReviewClient({ initialDrafts }: { initialDrafts: any[] }
                       <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Qty</label>
                       <Input type="number" value={item.quantity} onChange={e => {
                         const newItems = [...activeDraft.extractedData.items];
-                        newItems[idx].quantity = Number(e.target.value);
+                        const val = Number(e.target.value);
+                        newItems[idx].quantity = val;
+                        newItems[idx].amount = val * Number(newItems[idx].rate || 0);
                         setActiveDraft({...activeDraft, extractedData: {...activeDraft.extractedData, items: newItems}})
                       }} />
                     </div>
@@ -122,7 +127,9 @@ export default function ReviewClient({ initialDrafts }: { initialDrafts: any[] }
                       <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Rate</label>
                       <Input type="number" value={item.rate} onChange={e => {
                         const newItems = [...activeDraft.extractedData.items];
-                        newItems[idx].rate = Number(e.target.value);
+                        const val = Number(e.target.value);
+                        newItems[idx].rate = val;
+                        newItems[idx].amount = Number(newItems[idx].quantity || 0) * val;
                         setActiveDraft({...activeDraft, extractedData: {...activeDraft.extractedData, items: newItems}})
                       }} />
                     </div>

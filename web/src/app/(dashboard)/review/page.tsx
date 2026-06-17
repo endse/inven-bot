@@ -16,7 +16,7 @@ export default async function ReviewPage() {
   }))
 
   return (
-    <div className="space-y-6 h-full flex flex-col">
+    <div className="space-y-6">
       <h1 className="text-3xl font-bold">Review Queue</h1>
       <ReviewClient initialDrafts={serializedDrafts} />
     </div>

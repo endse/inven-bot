@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { processBatchInvoices } from "./actions"
+import { toast } from "sonner"
 
 export default function UploadPage() {
   const router = useRouter()
@@ -23,12 +24,12 @@ export default function UploadPage() {
     
     try {
       await processBatchInvoices(formData)
-      alert("Invoices successfully uploaded and processed! Moving to Review Queue.")
+      toast.success("Invoices successfully processed! Sent to Review Queue.")
       setFiles([])
       router.push("/review")
     } catch (err) {
       console.error(err)
-      alert("Failed to process invoices")
+      toast.error("Failed to process invoices. Please try again.")
     } finally {
       setIsProcessing(false)
     }

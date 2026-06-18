@@ -3,6 +3,7 @@
 import { extractInvoiceItems } from "@/lib/ocr";
 import { matchProduct } from "@/lib/matching";
 import { prisma } from "@/lib/prisma";
+import { parseInvoiceDate } from "@/lib/utils";
 import { InvoiceService } from "@/services/InvoiceService";
 import fs from "fs/promises";
 import path from "path";
@@ -85,13 +86,7 @@ export async function approveDraft(draftId: string, finalData: any) {
         }
       }
 
-      let txDate = new Date();
-      if (invoice_date) {
-        const parsedDate = new Date(invoice_date);
-        if (!isNaN(parsedDate.getTime())) {
-          txDate = parsedDate;
-        }
-      }
+      const txDate = parseInvoiceDate(invoice_date);
 
       await tx.transaction.create({
         data: {

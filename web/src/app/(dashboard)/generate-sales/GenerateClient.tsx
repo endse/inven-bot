@@ -14,6 +14,11 @@ const RANGES = [
 
 export default function GenerateClient({ initialDrafts = [] }: { initialDrafts?: any[] }) {
   const [selectedRange, setSelectedRange] = useState(RANGES[1])
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const d = new Date();
+    const m = (d.getMonth() + 1).toString().padStart(2, '0');
+    return `${d.getFullYear()}-${m}`;
+  })
   const [isGenerating, setIsGenerating] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
@@ -34,7 +39,7 @@ export default function GenerateClient({ initialDrafts = [] }: { initialDrafts?:
   const handleGenerate = async () => {
     setIsGenerating(true)
     try {
-      await queueGenerateBillAction(selectedRange.min, selectedRange.max)
+      await queueGenerateBillAction(selectedRange.min, selectedRange.max, selectedMonth)
       toast.success("Generation request added to queue!")
     } catch (err: any) {
       toast.error(err.message || "Failed to generate bill")
@@ -80,7 +85,17 @@ export default function GenerateClient({ initialDrafts = [] }: { initialDrafts?:
             <Sparkles className="h-5 w-5 text-zinc-800" /> Setup Bill
           </h2>
           
-          <div className="space-y-4 mb-8">
+          <div className="space-y-5 mb-6">
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">Select Target Month</label>
+              <input 
+                type="month" 
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="w-full h-12 px-4 rounded-xl border border-zinc-200 bg-white text-zinc-800 font-medium focus:outline-none focus:ring-1 focus:ring-zinc-950 focus:border-zinc-950 transition-all"
+              />
+            </div>
+
             <div className="grid grid-cols-1 gap-3">
               {RANGES.map(range => (
                 <button

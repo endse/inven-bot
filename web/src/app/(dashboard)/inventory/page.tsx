@@ -6,6 +6,7 @@ import Pagination from "@/components/Pagination"
 import { InventoryService } from "@/services/InventoryService"
 
 import InventoryFilter from "./InventoryFilter"
+import DirectEntryDialog from "./DirectEntryDialog"
 
 export const dynamic = 'force-dynamic';
 
@@ -16,12 +17,18 @@ export default async function InventoryPage(props: { searchParams: Promise<{ mon
 
   const { inventory, displayMonth, totalPages } = await InventoryService.getCalculatedInventory(page, pageSize, searchParams.month);
 
+  const allProducts = await prisma.product.findMany({
+    select: { id: true, name: true, hsn: true },
+    orderBy: { name: 'asc' }
+  });
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-extrabold text-slate-900">Inventory Balance Sheet</h1>
         <div className="flex gap-4 items-center">
           <InventoryFilter currentMonth={displayMonth} />
+          <DirectEntryDialog products={allProducts} defaultMonth={displayMonth} />
           <a href="/api/export/inventory" download>
             <Button variant="outline" className="gap-2">
               <Download className="h-4 w-4" />

@@ -3,8 +3,9 @@
 import { prisma } from "@/lib/prisma";
 import { generateSmartSale, GeneratedSaleItem } from "@/lib/generator";
 import { revalidatePath } from "next/cache";
+import { parseInvoiceDate } from "@/lib/utils";
 
-export async function queueGenerateBillAction(minAmount: number, maxAmount: number) {
+export async function queueGenerateBillAction(minAmount: number, maxAmount: number, month?: string) {
   // Check how many pending generated bills exist (to avoid clutter)
   const pendingCount = await prisma.invoiceDraft.count({
     where: {
@@ -22,6 +23,7 @@ export async function queueGenerateBillAction(minAmount: number, maxAmount: numb
     data: {
       minAmount,
       maxAmount,
+      selectedMonth: month || null,
       status: "pending",
     }
   });
@@ -73,6 +75,21 @@ export async function processQueueAction() {
     // Generate sale via Gemini
     const generated = await generateSmartSale(formattedProducts, task.minAmount, task.maxAmount);
     
+    // Calculate the invoice date based on task.selectedMonth
+    let invoiceDate = new Date();
+    if (task.selectedMonth && /^\d{4}-\d{2}$/.test(task.selectedMonth)) {
+      const [y, m] = task.selectedMonth.split('-');
+      const now = new Date();
+      const targetYear = Number(y);
+      const targetMonth = Number(m) - 1;
+      if (now.getFullYear() === targetYear && now.getMonth() === targetMonth) {
+        invoiceDate = now;
+      } else {
+        // Fallback to the 15th day of that month
+        invoiceDate = new Date(targetYear, targetMonth, 15);
+      }
+    }
+
     // Save to Persistent Database Queue as an InvoiceDraft
     await prisma.invoiceDraft.create({
       data: {
@@ -80,7 +97,7 @@ export async function processQueueAction() {
         transactionType: "sale",
         status: "pending_review",
         extractedData: {
-          invoice_date: new Date().toISOString(),
+          invoice_date: invoiceDate.toISOString().split('T')[0],
           items: generated.items,
           totalAmount: generated.totalAmount
         } as any
@@ -142,20 +159,26 @@ export async function approveBillAction(draftId: string, items: GeneratedSaleIte
       data: { status: "approved" }
     });
 
+    const extracted = draft.extractedData as any;
+    const invoiceDateStr = extracted?.invoice_date;
+    const txDate = parseInvoiceDate(invoiceDateStr);
+
     for (const item of items) {
       await tx.transaction.create({
         data: {
           productId: item.productId,
           invoiceDraftId: draft.id,
           transactionType: "sale",
-          transactionDate: new Date(),
-          dateSource: "current",
+          transactionDate: txDate,
+          dateSource: invoiceDateStr ? "extracted" : "current",
           quantity: item.quantity,
           rate: item.rate,
           amount: item.amount,
         }
       });
     }
+  }, {
+    timeout: 30000
   });
 
   revalidatePath("/generate-sales");

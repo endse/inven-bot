@@ -52,6 +52,24 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to permanently delete this user?')) return;
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('User deleted successfully');
+        fetchUsers();
+      } else {
+        toast.error(data.error || 'Failed to delete user');
+      }
+    } catch (error) {
+      toast.error('Failed to delete user');
+    }
+  };
+
   if (loading) {
     return <div className="p-8 text-center text-gray-500">Loading users...</div>;
   }
@@ -104,30 +122,38 @@ export default function AdminUsersPage() {
                   {new Date(user.createdAt).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  {user.status === 'PENDING' && (
-                    <div className="flex justify-end gap-2">
+                  <div className="flex justify-end gap-2">
+                    {user.status === 'PENDING' && (
+                      <>
+                        <button
+                          onClick={() => handleStatusUpdate(user.id, 'approve')}
+                          className="text-green-600 hover:text-green-900 bg-green-50 px-3 py-1 rounded-md transition-colors"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleStatusUpdate(user.id, 'reject')}
+                          className="text-yellow-600 hover:text-yellow-900 bg-yellow-50 px-3 py-1 rounded-md transition-colors"
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
+                    {user.status === 'REJECTED' && (
                       <button
                         onClick={() => handleStatusUpdate(user.id, 'approve')}
                         className="text-green-600 hover:text-green-900 bg-green-50 px-3 py-1 rounded-md transition-colors"
                       >
                         Approve
                       </button>
-                      <button
-                        onClick={() => handleStatusUpdate(user.id, 'reject')}
-                        className="text-red-600 hover:text-red-900 bg-red-50 px-3 py-1 rounded-md transition-colors"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  )}
-                  {user.status === 'REJECTED' && (
+                    )}
                     <button
-                        onClick={() => handleStatusUpdate(user.id, 'approve')}
-                        className="text-green-600 hover:text-green-900 bg-green-50 px-3 py-1 rounded-md transition-colors"
-                      >
-                        Approve
-                      </button>
-                  )}
+                      onClick={() => handleDelete(user.id)}
+                      className="text-red-600 hover:text-red-900 bg-red-50 px-3 py-1 rounded-md transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

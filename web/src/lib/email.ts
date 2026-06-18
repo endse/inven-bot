@@ -39,3 +39,20 @@ export async function sendEmailWithPdf(to: string, subject: string, text: string
 
   return info;
 }
+
+export async function sendEmail(to: string, subject: string, text: string, html?: string) {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn("SMTP credentials missing. Simulating email send for:", to, subject);
+    return { simulated: true };
+  }
+
+  const info = await transporter.sendMail({
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    to,
+    subject,
+    text,
+    html,
+  });
+
+  return info;
+}

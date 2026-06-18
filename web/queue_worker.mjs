@@ -1,6 +1,6 @@
 import { setInterval } from 'timers';
 
-const POLL_INTERVAL = 30000; // 30 seconds
+const POLL_INTERVAL = 5000; // 5 seconds
 const GENERATE_ENDPOINT = 'http://localhost:3000/api/process-queue';
 const EMAIL_ENDPOINT = 'http://localhost:3000/api/process-email-queue';
 const UPLOAD_ENDPOINT = 'http://localhost:3000/api/process-upload-queue';

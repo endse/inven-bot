@@ -3,6 +3,7 @@
 import { extractInvoiceItems } from "@/lib/ocr";
 import { matchProduct } from "@/lib/matching";
 import { prisma } from "@/lib/prisma";
+import { InvoiceService } from "@/services/InvoiceService";
 import fs from "fs/promises";
 import path from "path";
 import crypto from "crypto";
@@ -40,6 +41,11 @@ export async function processBatchInvoices(formData: FormData) {
       return { id: draft.id, success: true, queued: true };
     })
   );
+
+  // Trigger background processing asynchronously (fire and forget)
+  InvoiceService.processUploadQueueBatch(5).catch(err => {
+    console.error("Async queue processing error:", err);
+  });
 
   return processingResults;
 }

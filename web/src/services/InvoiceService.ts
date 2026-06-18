@@ -19,15 +19,18 @@ export class InvoiceService {
    * Retrieves paginated invoice history.
    */
   static async getPaginatedHistory(page: number, pageSize: number) {
+    const validPage = Math.max(1, isNaN(page) ? 1 : page);
+    const validPageSize = Math.min(100, Math.max(1, isNaN(pageSize) ? 10 : pageSize));
+
     const totalCount = await prisma.invoiceDraft.count({ where: { status: "approved" } });
-    const totalPages = Math.ceil(totalCount / pageSize);
+    const totalPages = Math.ceil(totalCount / validPageSize);
 
     const draftsData = await prisma.invoiceDraft.findMany({
       where: { status: "approved" },
       select: { id: true, transactionType: true, status: true, extractedData: true, createdAt: true, updatedAt: true, transactions: true },
       orderBy: { createdAt: "desc" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      skip: (validPage - 1) * validPageSize,
+      take: validPageSize,
     });
 
     const approvedDrafts = draftsData.map(draft => ({
@@ -41,7 +44,7 @@ export class InvoiceService {
       }))
     }));
 
-    return { approvedDrafts, totalPages, currentPage: page };
+    return { approvedDrafts, totalPages, currentPage: validPage };
   }
 
   /**
@@ -56,6 +59,10 @@ export class InvoiceService {
             status: 'failed', 
             attempts: { lt: 3 },
             nextRetryAt: { lte: new Date() }
+          },
+          {
+            status: 'processing',
+            updatedAt: { lte: new Date(Date.now() - 5 * 60 * 1000) }
           }
         ]
       },
@@ -70,25 +77,52 @@ export class InvoiceService {
     let processedCount = 0;
 
     for (const item of queueItems) {
-      await prisma.uploadQueue.update({
-        where: { id: item.id },
+      // Optimistic locking to prevent duplicate processing by concurrent worker calls
+      const affected = await prisma.uploadQueue.updateMany({
+        where: {
+          id: item.id,
+          updatedAt: item.updatedAt
+        },
         data: { status: 'processing' }
       });
+
+      if (affected.count === 0) {
+        continue;
+      }
 
       try {
         const draft = await prisma.invoiceDraft.findUnique({
           where: { id: item.draftId }
         });
 
-        if (!draft) throw new Error(`Draft ${item.draftId} not found`);
+        if (!draft) {
+          await prisma.uploadQueue.update({
+            where: { id: item.id },
+            data: { status: 'failed', errorMessage: `Draft ${item.draftId} not found`, attempts: 3 }
+          });
+          continue;
+        }
 
-        const matches = draft.imageUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-        if (!matches || matches.length !== 3) throw new Error('Invalid imageUrl format');
+        if (!draft.imageUrl || typeof draft.imageUrl !== 'string') {
+          throw new Error('Missing or invalid imageUrl');
+        }
 
-        const mimeType = matches[1];
-        const base64Image = matches[2];
+        const prefixEnd = draft.imageUrl.indexOf(';base64,');
+        if (prefixEnd === -1 || !draft.imageUrl.startsWith('data:')) {
+          throw new Error('Invalid imageUrl format');
+        }
+        const mimeType = draft.imageUrl.substring(5, prefixEnd);
+        const base64Image = draft.imageUrl.substring(prefixEnd + 8);
 
-        const extracted = await extractInvoiceItems(base64Image, mimeType);
+        const products = await prisma.product.findMany({ select: { name: true } });
+        const productNames = products.map(p => p.name);
+
+        const extracted = await extractInvoiceItems(base64Image, mimeType, productNames);
+        
+        if (!extracted || !Array.isArray(extracted.items)) {
+          throw new Error('OCR returned invalid or missing items array');
+        }
+
         const draftItems = [];
 
         for (const extractedItem of extracted.items) {

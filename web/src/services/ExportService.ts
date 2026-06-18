@@ -27,7 +27,7 @@ export class ExportService {
 
       csvRows.push([
         (index + 1).toString(),
-        `"${p.name.replace(/"/g, '""')}"`, // Escape quotes
+        `"${(p.name || '').replace(/"/g, '""')}"`, // Escape quotes
         `"${p.hsn || ""}"`,
         p.lastRate?.toString() || "0",
         purchases.toString(),
@@ -62,7 +62,7 @@ export class ExportService {
           `"${invoiceDate}"`,
           `"${draft.transactionType}"`,
           `"${draft.status}"`,
-          `"${tx.product.name.replace(/"/g, '""')}"`,
+          `"${(tx.product?.name || '').replace(/"/g, '""')}"`,
           tx.quantity.toString(),
           tx.rate?.toString() || "0",
           tx.amount?.toString() || "0"

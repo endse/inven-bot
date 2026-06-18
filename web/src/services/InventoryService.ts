@@ -5,20 +5,23 @@ export class InventoryService {
    * Retrieves paginated inventory data with calculated balances for a specific month.
    */
   static async getCalculatedInventory(page: number, pageSize: number, monthParam?: string) {
+    const validPage = Math.max(1, isNaN(page) ? 1 : page);
+    const validPageSize = Math.min(100, Math.max(1, isNaN(pageSize) ? 10 : pageSize));
+
     const totalCount = await prisma.product.count();
-    const totalPages = Math.ceil(totalCount / pageSize);
+    const totalPages = Math.ceil(totalCount / validPageSize);
 
     const products = await prisma.product.findMany({
       include: { transactions: true },
       orderBy: { name: 'asc' },
-      skip: (page - 1) * pageSize,
-      take: pageSize
+      skip: (validPage - 1) * validPageSize,
+      take: validPageSize
     });
 
     let targetMonthStart = new Date();
     let displayMonth = "";
 
-    if (monthParam) {
+    if (monthParam && /^\d{4}-\d{2}$/.test(monthParam)) {
       const [y, m] = monthParam.split('-');
       targetMonthStart = new Date(Number(y), Number(m) - 1, 1);
       displayMonth = monthParam;
@@ -54,7 +57,7 @@ export class InventoryService {
 
       return { 
         ...p, 
-        sno: (page - 1) * pageSize + index + 1,
+        sno: (validPage - 1) * validPageSize + index + 1,
         openingBalance, 
         purchases, 
         sales, 
@@ -66,7 +69,7 @@ export class InventoryService {
       inventory,
       displayMonth,
       totalPages,
-      currentPage: page
+      currentPage: validPage
     };
   }
 }

@@ -50,14 +50,29 @@ export interface ExtractedInvoice {
   items: ExtractedItem[];
 }
 
-export async function extractInvoiceItems(base64Image: string, mimeType: string): Promise<ExtractedInvoice> {
+export async function extractInvoiceItems(
+  base64Image: string, 
+  mimeType: string, 
+  existingProducts: string[] = []
+): Promise<ExtractedInvoice> {
+  let finalPrompt = PROMPT;
+  if (existingProducts.length > 0) {
+    finalPrompt += `\n\nCRITICAL INSTRUCTION FOR PRODUCT MAPPING:
+We have a list of existing product names in our inventory database. For each extracted invoice line item, look at its name/description and check if it is a semantic or close match to any of the product names in the provided list.
+- If it matches one of our existing product names (even with minor spelling differences, different case, abbreviations, extra description words, or different party/brand naming styles), return the EXACT name from our existing products list in the "product_name" field.
+- If it is a completely new product that is not present in our list, return the original product name as it appears on the invoice in the "product_name" field.
+
+List of existing products in our database:
+${existingProducts.map(p => `- ${p}`).join('\n')}`;
+  }
+
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
     contents: [
       {
         role: 'user',
         parts: [
-          { text: PROMPT },
+          { text: finalPrompt },
           { inlineData: { data: base64Image, mimeType } }
         ]
       }

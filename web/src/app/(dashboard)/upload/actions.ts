@@ -63,13 +63,34 @@ export async function approveDraft(draftId: string, finalData: any) {
 
       let productId = item.productId;
       if (item.action === "create_new" || !productId) {
-        const newProduct = await tx.product.create({
-          data: {
-            name: item.product_name,
-            lastRate: item.rate
-          }
+        // Prevent unique constraint errors if the product name already exists
+        const existingProduct = await tx.product.findUnique({
+          where: { name: item.product_name }
         });
-        productId = newProduct.id;
+
+        if (existingProduct) {
+          productId = existingProduct.id;
+          await tx.product.update({
+            where: { id: productId },
+            data: { lastRate: item.rate }
+          });
+        } else {
+          const newProduct = await tx.product.create({
+            data: {
+              name: item.product_name,
+              lastRate: item.rate
+            }
+          });
+          productId = newProduct.id;
+        }
+      }
+
+      let txDate = new Date();
+      if (invoice_date) {
+        const parsedDate = new Date(invoice_date);
+        if (!isNaN(parsedDate.getTime())) {
+          txDate = parsedDate;
+        }
       }
 
       await tx.transaction.create({
@@ -77,7 +98,7 @@ export async function approveDraft(draftId: string, finalData: any) {
           productId,
           invoiceDraftId: draftId,
           transactionType,
-          transactionDate: new Date(invoice_date || new Date()),
+          transactionDate: txDate,
           dateSource: invoice_date ? "extracted" : "current",
           quantity: item.quantity,
           rate: item.rate,
@@ -90,6 +111,8 @@ export async function approveDraft(draftId: string, finalData: any) {
       where: { id: draftId },
       data: { status: "approved" }
     });
+  }, {
+    timeout: 30000
   });
 }
 

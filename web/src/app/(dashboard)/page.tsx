@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Package, TrendingUp, TrendingDown, Clock, Activity } from "lucide-react"
+import DashboardCharts from "@/components/DashboardCharts"
 
 export const dynamic = 'force-dynamic'
 
@@ -63,6 +64,36 @@ export default async function DashboardPage() {
     }
   ]
 
+  // Prepare chart data (Last 6 months)
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+  sixMonthsAgo.setDate(1);
+  sixMonthsAgo.setHours(0,0,0,0);
+
+  const recentTransactions = await prisma.transaction.findMany({
+    where: { transactionDate: { gte: sixMonthsAgo } },
+    select: { transactionType: true, transactionDate: true }
+  });
+
+  const monthlyDataMap = new Map();
+  for (let i = 0; i < 6; i++) {
+    const d = new Date();
+    d.setMonth(d.getMonth() - i);
+    const monthKey = d.toLocaleString('default', { month: 'short' });
+    monthlyDataMap.set(monthKey, { name: monthKey, sales: 0, purchases: 0 });
+  }
+
+  recentTransactions.forEach(t => {
+    const monthKey = t.transactionDate.toLocaleString('default', { month: 'short' });
+    if (monthlyDataMap.has(monthKey)) {
+      const data = monthlyDataMap.get(monthKey);
+      if (t.transactionType === 'sale') data.sales++;
+      if (t.transactionType === 'purchase') data.purchases++;
+    }
+  });
+
+  const chartData = Array.from(monthlyDataMap.values()).reverse();
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between">
@@ -92,18 +123,9 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* Placeholder for future charts */}
+      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
-        <div className="lg:col-span-2 rounded-2xl border bg-white p-8 shadow-sm">
-          <div className="flex items-center gap-3 border-b pb-4 mb-4">
-            <Activity className="h-5 w-5 text-indigo-500" />
-            <h3 className="text-lg font-semibold text-slate-800">Recent Activity</h3>
-          </div>
-          <div className="h-64 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed rounded-xl bg-slate-50/50">
-            <TrendingUp className="h-8 w-8 mb-3 opacity-20" />
-            <p>Chart data will populate as transactions are recorded.</p>
-          </div>
-        </div>
+        <DashboardCharts data={chartData} />
         <div className="rounded-2xl border bg-gradient-to-br from-indigo-500 to-violet-600 p-8 shadow-lg text-white">
           <h3 className="text-lg font-semibold opacity-90">System Status</h3>
           <div className="mt-6 space-y-4">

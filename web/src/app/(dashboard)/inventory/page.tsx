@@ -1,15 +1,26 @@
 import { prisma } from "@/lib/prisma"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { Download } from "lucide-react"
+import Pagination from "@/components/Pagination"
 
 import InventoryFilter from "./InventoryFilter"
 
 export const dynamic = 'force-dynamic';
 
-export default async function InventoryPage(props: { searchParams: Promise<{ month?: string }> }) {
+export default async function InventoryPage(props: { searchParams: Promise<{ month?: string, page?: string }> }) {
   const searchParams = await props.searchParams;
+  const page = parseInt(searchParams.page || "1", 10);
+  const pageSize = 20;
+
+  const totalCount = await prisma.product.count();
+  const totalPages = Math.ceil(totalCount / pageSize);
+
   const products = await prisma.product.findMany({
     include: { transactions: true },
-    orderBy: { name: 'asc' }
+    orderBy: { name: 'asc' },
+    skip: (page - 1) * pageSize,
+    take: pageSize
   })
 
   let targetMonthStart = new Date();
@@ -60,12 +71,20 @@ export default async function InventoryPage(props: { searchParams: Promise<{ mon
   })
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Inventory Balance Sheet</h1>
-        <InventoryFilter currentMonth={displayMonth} />
+        <h1 className="text-3xl font-extrabold text-slate-900">Inventory Balance Sheet</h1>
+        <div className="flex gap-4 items-center">
+          <InventoryFilter currentMonth={displayMonth} />
+          <a href="/api/export/inventory" download>
+            <Button variant="outline" className="gap-2">
+              <Download className="h-4 w-4" />
+              Export CSV
+            </Button>
+          </a>
+        </div>
       </div>
-      <div className="border rounded-md bg-white">
+      <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -100,6 +119,7 @@ export default async function InventoryPage(props: { searchParams: Promise<{ mon
           </TableBody>
         </Table>
       </div>
+      <Pagination totalPages={totalPages} currentPage={page} />
     </div>
   )
 }

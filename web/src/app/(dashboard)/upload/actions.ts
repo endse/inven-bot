@@ -29,40 +29,15 @@ export async function processBatchInvoices(formData: FormData) {
         }
       });
 
-      try {
-        const extracted = await extractInvoiceItems(base64Image, mimeType);
-
-        const draftItems = [];
-        for (const item of extracted.items) {
-          const match = await matchProduct(item.product_name);
-          let itemStatus = "pending";
-          if (match && match.similarityScore > 95) {
-            itemStatus = "matched_high";
-          } else if (match && match.similarityScore >= 60) {
-            itemStatus = "matched_low";
-          } else {
-            itemStatus = "new";
-          }
-          draftItems.push({ ...item, match, itemStatus, action: match ? "use_existing" : "create_new" });
+      // Enqueue the draft for background processing
+      await prisma.uploadQueue.create({
+        data: {
+          draftId: draft.id,
+          status: "pending"
         }
+      });
 
-        await prisma.invoiceDraft.update({
-          where: { id: draft.id },
-          data: {
-            extractedData: { invoice_date: extracted.invoice_date, items: draftItems },
-            status: "pending_review"
-          }
-        });
-
-        return { id: draft.id, success: true };
-      } catch (err) {
-        console.error("OCR Failed", err);
-        await prisma.invoiceDraft.update({
-          where: { id: draft.id },
-          data: { status: "rejected" }
-        });
-        return { id: draft.id, success: false };
-      }
+      return { id: draft.id, success: true, queued: true };
     })
   );
 

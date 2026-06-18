@@ -92,6 +92,18 @@ model EmailQueue {
   updatedAt    DateTime @updatedAt
 }
 
+model UploadQueue {
+  id           String   @id @default(uuid())
+  draftId      String   @unique
+  status       String   // "pending", "processing", "completed", "failed"
+  attempts     Int      @default(0)
+  nextRetryAt  DateTime @default(now())
+  errorMessage String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 enum Role {
   USER
   ADMIN

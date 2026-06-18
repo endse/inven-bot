@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { InvoiceService } from '@/services/InvoiceService';
 
+export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // Max execution time for Vercel
 
 export async function GET(req: Request) {

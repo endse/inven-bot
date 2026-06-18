@@ -114,8 +114,9 @@ export class InvoiceService {
               status: 'pending_review'
             }
           }),
-          prisma.uploadQueue.delete({
-            where: { id: item.id }
+          prisma.uploadQueue.update({
+            where: { id: item.id },
+            data: { status: 'completed' }
           })
         ]);
 

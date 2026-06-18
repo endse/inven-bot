@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { processBatchInvoices } from "./actions"
 import { toast } from "sonner"
 import { useDropzone } from "react-dropzone"
-import { UploadCloud, FileImage, X, Loader2 } from "lucide-react"
+import { UploadCloud, FileImage, X, Loader2, Camera } from "lucide-react"
+import { compressImage } from "@/lib/image"
 
 export default function UploadPage() {
   const router = useRouter()
@@ -45,9 +46,10 @@ export default function UploadPage() {
     setIsProcessing(true)
     const formData = new FormData()
     formData.append("type", type)
-    files.forEach(f => formData.append("files", f))
     
     try {
+      const compressedFiles = await Promise.all(files.map(f => compressImage(f)))
+      compressedFiles.forEach(f => formData.append("files", f))
       await processBatchInvoices(formData)
       toast.success("Invoices successfully processed! Sent to Review Queue.")
       setFiles([])
@@ -88,6 +90,24 @@ export default function UploadPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6 sm:p-10">
+          <div className="flex justify-center mb-6">
+             <input 
+               type="file" 
+               accept="image/*" 
+               capture="environment" 
+               id="camera-input" 
+               className="hidden" 
+               onChange={(e) => {
+                 if (e.target.files && e.target.files.length > 0) {
+                   onDrop(Array.from(e.target.files));
+                 }
+               }} 
+             />
+             <Button type="button" onClick={() => document.getElementById('camera-input')?.click()} variant="outline" className="w-full sm:w-auto font-semibold py-6 text-base border-primary/20 hover:bg-primary/5 text-primary">
+               <Camera className="w-5 h-5 mr-2" />
+               Capture Photo
+             </Button>
+          </div>
           <div 
             {...getRootProps()} 
             className={`
